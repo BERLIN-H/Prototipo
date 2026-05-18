@@ -1,60 +1,75 @@
-import React from 'react';
-import { Settings as SettingsIcon, Bell, Lock, Eye, Globe, Moon } from 'lucide-react';
+import React, { useState } from 'react';
+import { Lock, Save } from 'lucide-react';
+import api from '../api/axios';
+import { useAuthStore } from '../store/authStore';
+import { useNavigate } from 'react-router-dom';
 
 const Settings = () => {
-  const sections = [
-    { title: 'Notificaciones', icon: Bell, description: 'Gestiona cómo recibes las alertas de tus citas.' },
-    { title: 'Privacidad y Seguridad', icon: Lock, description: 'Controla tu contraseña y la visibilidad de tu perfil.' },
-    { title: 'Apariencia', icon: Moon, description: 'Personaliza el tema y los colores de la plataforma.' },
-    { title: 'Idioma', icon: Globe, description: 'Selecciona tu idioma de preferencia.' },
-  ];
+  const { logout } = useAuthStore();
+  const navigate = useNavigate();
+  const [passwords, setPasswords] = useState({ current: '', next: '', confirm: '' });
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
+
+  const handlePasswordChange = async () => {
+    if (passwords.next !== passwords.confirm) {
+      setMsg({ type: 'err', text: 'Las contraseñas nuevas no coinciden' });
+      return;
+    }
+    if (passwords.next.length < 6) {
+      setMsg({ type: 'err', text: 'La contraseña debe tener al menos 6 caracteres' });
+      return;
+    }
+    setSaving(true);
+    setMsg(null);
+    try {
+      await api.patch('/users/me/password', { currentPassword: passwords.current, newPassword: passwords.next });
+      setMsg({ type: 'ok', text: 'Contraseña actualizada. Por seguridad, vuelve a iniciar sesión.' });
+      setPasswords({ current: '', next: '', confirm: '' });
+      setTimeout(() => { logout(); navigate('/'); }, 2500);
+    } catch (e: any) {
+      setMsg({ type: 'err', text: e.response?.data?.error || 'Error al cambiar la contraseña' });
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
-    <div className="max-w-3xl mx-auto space-y-8">
+    <div className="max-w-2xl mx-auto py-8 px-4 space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-on-surface">Configuración</h2>
-        <p className="text-on-surface-variant">Personaliza tu experiencia en Equilibria.</p>
+        <h1 className="text-3xl font-display font-black text-on-surface">Configuración</h1>
+        <p className="text-on-surface-variant mt-1">Ajustes de seguridad de tu cuenta.</p>
       </div>
 
-      <div className="bg-white rounded-2xl border border-outline-variant/30 card-elevation overflow-hidden divide-y divide-outline-variant/20">
-        {sections.map((section) => (
-          <div key={section.title} className="p-6 hover:bg-surface-container-low/30 transition-colors cursor-pointer flex items-center justify-between group">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-surface-container-low rounded-xl text-primary group-hover:bg-primary group-hover:text-white transition-all">
-                <section.icon size={20} />
-              </div>
-              <div>
-                <h3 className="font-bold text-on-surface">{section.title}</h3>
-                <p className="text-sm text-outline font-medium">{section.description}</p>
-              </div>
-            </div>
-            <button className="p-2 text-outline hover:text-primary">
-               <SettingsIcon size={18} />
-            </button>
-          </div>
-        ))}
-      </div>
+      <div className="bg-white rounded-2xl border border-outline-variant/20 shadow-sm p-6 space-y-4">
+        <h3 className="font-bold text-on-surface flex items-center gap-2"><Lock size={18} /> Cambiar contraseña</h3>
 
-      <section className="bg-surface-container-low/50 p-8 rounded-2xl border border-dashed border-outline-variant/50 space-y-4">
-        <h3 className="font-bold text-on-surface flex items-center gap-2">
-            <Eye size={18} className="text-primary" />
-            Accesibilidad
-        </h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="flex items-center justify-between p-4 bg-white rounded-xl border border-outline-variant/20">
-                <span className="text-sm font-semibold">Modo de alto contraste</span>
-                <div className="w-10 h-5 bg-outline-variant rounded-full relative cursor-pointer">
-                    <div className="absolute left-1 top-1 w-3 h-3 bg-white rounded-full"></div>
-                </div>
+        {msg && (
+          <p className={`text-sm font-bold px-4 py-2 rounded-lg ${msg.type === 'ok' ? 'bg-green-50 text-green-700' : 'bg-error/10 text-error'}`}>
+            {msg.text}
+          </p>
+        )}
+
+        <div className="space-y-3">
+          {[
+            { label: 'Contraseña actual', key: 'current' },
+            { label: 'Nueva contraseña', key: 'next' },
+            { label: 'Confirmar nueva contraseña', key: 'confirm' },
+          ].map(({ label, key }) => (
+            <div key={key}>
+              <label className="text-sm font-bold text-on-surface-variant block mb-1">{label}</label>
+              <input type="password" value={passwords[key as keyof typeof passwords]}
+                onChange={e => setPasswords(p => ({ ...p, [key]: e.target.value }))}
+                className="w-full bg-surface-container border-none rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-primary outline-none" />
             </div>
-            <div className="flex items-center justify-between p-4 bg-white rounded-xl border border-outline-variant/20">
-                <span className="text-sm font-semibold">Texto enriquecido</span>
-                <div className="w-10 h-5 bg-secondary rounded-full relative cursor-pointer">
-                    <div className="absolute right-1 top-1 w-3 h-3 bg-white rounded-full"></div>
-                </div>
-            </div>
+          ))}
         </div>
-      </section>
+
+        <button onClick={handlePasswordChange} disabled={saving}
+          className="flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-xl font-bold hover:bg-primary/90 disabled:opacity-60 transition-colors">
+          <Save size={18} /> {saving ? 'Guardando...' : 'Actualizar contraseña'}
+        </button>
+      </div>
     </div>
   );
 };

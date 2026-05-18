@@ -1,135 +1,168 @@
-import React from 'react';
-import { Users, FileText, BarChart3, ShieldCheck, Mail, Search, MoreVertical } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Users, Calendar, CheckCircle, Clock, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { adminApi, AdminStats } from '../api/admin';
+
+const roleColors: Record<string, string> = {
+  USER: 'bg-blue-100 text-blue-800',
+  PSYCHOLOGIST: 'bg-purple-100 text-purple-800',
+  ADMIN: 'bg-red-100 text-red-800',
+};
+const roleLabels: Record<string, string> = {
+  USER: 'Estudiante', PSYCHOLOGIST: 'Psicólogo/a', ADMIN: 'Admin',
+};
 
 const Admin = () => {
-  const stats = [
-    { label: 'Usuarios Activos', value: '1,280', delta: '+12%', icon: Users, color: 'bg-primary' },
-    { label: 'Citas Realizadas', value: '450', delta: '+5%', icon: CalendarIcon, color: 'bg-secondary' },
-    { label: 'Alertas SOS', value: '12', delta: '-2', icon: ShieldCheck, color: 'bg-error' },
-    { label: 'Informes Pendientes', value: '28', delta: '+8', icon: FileText, color: 'bg-tertiary' },
-  ];
+  const [stats, setStats] = useState<AdminStats | null>(null);
+  const [users, setUsers] = useState<any[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [search, setSearch] = useState('');
+  const [roleFilter, setRoleFilter] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState<'stats' | 'users'>('stats');
 
-  return (
-    <div className="space-y-8 pb-20">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-on-surface">Panel de Administración</h2>
-          <p className="text-on-surface-variant">Gestión global de la plataforma Equilibria.</p>
-        </div>
-        <div className="flex gap-3">
-          <button className="bg-white border border-outline-variant/30 px-4 py-2 rounded-xl font-bold text-sm hover:bg-surface-container-low transition-colors">Exportar Datos</button>
-          <button className="bg-primary text-white px-6 py-2 rounded-xl font-bold text-sm shadow-lg shadow-primary/20">Configuración Global</button>
-        </div>
+  useEffect(() => {
+    adminApi.getStats().then(setStats).catch(() => {});
+  }, []);
+
+  const loadUsers = async () => {
+    setLoading(true);
+    const params: Record<string, string> = { page: String(page), limit: '10' };
+    if (search) params.search = search;
+    if (roleFilter) params.role = roleFilter;
+    const data = await adminApi.getUsers(params).catch(() => ({ data: [], total: 0, totalPages: 1 }));
+    setUsers(data.data ?? []);
+    setTotal(data.total ?? 0);
+    setTotalPages(data.totalPages ?? 1);
+    setLoading(false);
+  };
+
+  useEffect(() => { if (tab === 'users') loadUsers(); }, [tab, page, roleFilter]);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setPage(1);
+    loadUsers();
+  };
+
+  const StatCard = ({ label, value, icon: Icon, color }: any) => (
+    <div className="bg-white rounded-2xl border border-outline-variant/20 shadow-sm p-6 flex items-center gap-4">
+      <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${color}`}>
+        <Icon size={24} className="text-white" />
       </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat) => (
-          <div key={stat.label} className="bg-white p-6 rounded-2xl border border-outline-variant/30 card-elevation space-y-4">
-            <div className="flex justify-between items-start">
-              <div className={`p-3 rounded-xl text-white ${stat.color}`}>
-                <stat.icon size={20} />
-              </div>
-              <span className={`text-xs font-bold ${stat.delta.startsWith('+') ? 'text-secondary' : 'text-error'}`}>
-                {stat.delta}
-              </span>
-            </div>
-            <div>
-              <p className="text-3xl font-black text-on-surface tracking-tight">{stat.value}</p>
-              <p className="text-xs text-outline font-bold uppercase tracking-wider mt-1">{stat.label}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 bg-white rounded-2xl border border-outline-variant/30 card-elevation overflow-hidden">
-             <div className="p-6 border-b border-outline-variant/20 flex justify-between items-center">
-                <h3 className="font-bold flex items-center gap-2">
-                    <Users size={18} className="text-primary" />
-                    Gestión de Estudiantes
-                </h3>
-                <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-outline" size={16} />
-                    <input type="text" placeholder="Buscar ID o nombre..." className="pl-10 pr-4 py-2 bg-surface-container-low border-none rounded-lg text-sm w-64 focus:ring-1 focus:ring-primary" />
-                </div>
-             </div>
-             <div className="overflow-x-auto">
-                <table className="w-full text-left">
-                    <thead className="bg-surface-container-low/50 text-[10px] uppercase font-bold text-outline tracking-widest">
-                        <tr>
-                            <th className="px-6 py-4">Usuario</th>
-                            <th className="px-6 py-4">Facultad</th>
-                            <th className="px-6 py-4">Estado</th>
-                            <th className="px-6 py-4">Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-outline-variant/20">
-                        {[
-                            { name: 'Andrés Morales', id: '202201', faculty: 'Ingeniería', status: 'Activo' },
-                            { name: 'Sofía Castro', id: '202302', faculty: 'Derecho', status: 'En espera' },
-                            { name: 'Juan Ruiz', id: '202105', faculty: 'Medicina', status: 'Activo' }
-                        ].map(user => (
-                            <tr key={user.id} className="hover:bg-surface-container-low/20 transition-colors">
-                                <td className="px-6 py-4">
-                                    <div className="flex flex-col">
-                                        <span className="font-bold text-sm">{user.name}</span>
-                                        <span className="text-xs text-outline font-semibold">ID: {user.id}</span>
-                                    </div>
-                                </td>
-                                <td className="px-6 py-4 text-sm font-medium">{user.faculty}</td>
-                                <td className="px-6 py-4">
-                                    <span className={`text-[10px] font-bold px-2 py-1 rounded-md uppercase ${user.status === 'Activo' ? 'bg-secondary/10 text-secondary' : 'bg-primary/10 text-primary'}`}>
-                                        {user.status}
-                                    </span>
-                                </td>
-                                <td className="px-6 py-4">
-                                    <button className="p-2 hover:bg-surface-container-low rounded-lg transition-colors">
-                                        <MoreVertical size={16} />
-                                    </button>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-             </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-2xl border border-outline-variant/30 card-elevation space-y-6">
-            <h3 className="font-bold flex items-center gap-2">
-                <BarChart3 size={18} className="text-primary" />
-                Distribución de Casos
-            </h3>
-            <div className="space-y-4">
-                 {[
-                    { label: 'Ansiedad', color: 'bg-primary', width: '65%' },
-                    { label: 'Depresión', color: 'bg-secondary', width: '40%' },
-                    { label: 'Estrés Académico', color: 'bg-tertiary', width: '85%' },
-                    { label: 'Otros', color: 'bg-outline', width: '20%' }
-                 ].map(item => (
-                    <div key={item.label} className="space-y-1">
-                        <div className="flex justify-between text-xs font-bold uppercase tracking-wider text-outline">
-                            <span>{item.label}</span>
-                            <span>{item.width}</span>
-                        </div>
-                        <div className="h-1.5 w-full bg-surface-container rounded-full overflow-hidden">
-                            <div className={`h-full ${item.color} rounded-full`} style={{ width: item.width }}></div>
-                        </div>
-                    </div>
-                 ))}
-            </div>
-            <div className="pt-4 border-t border-outline-variant/20">
-                <button className="w-full flex items-center justify-center gap-2 py-3 bg-surface-container-low hover:bg-surface-container-high transition-colors rounded-xl font-bold text-sm text-primary">
-                    <Mail size={16} />
-                    Enviar Informe Semanal
-                </button>
-            </div>
-        </div>
+      <div>
+        <p className="text-2xl font-display font-black text-on-surface">{value ?? '—'}</p>
+        <p className="text-sm text-on-surface-variant">{label}</p>
       </div>
     </div>
   );
-};
 
-// Need to import Calendar from lucide-react if not locally imported correctly or use CalendarIcon alias
-import { Calendar as CalendarIcon } from 'lucide-react';
+  return (
+    <div className="max-w-5xl mx-auto py-8 px-4 space-y-6">
+      <div>
+        <h1 className="text-3xl font-display font-black text-on-surface">Panel de Administración</h1>
+        <p className="text-on-surface-variant mt-1">Gestión centralizada de Equilibria.</p>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex gap-2">
+        {(['stats', 'users'] as const).map(t => (
+          <button key={t} onClick={() => setTab(t)}
+            className={`px-5 py-2 rounded-xl font-bold text-sm transition-colors
+              ${tab === t ? 'bg-primary text-white' : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-highest'}`}>
+            {t === 'stats' ? 'Estadísticas' : 'Usuarios'}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'stats' && stats && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <StatCard label="Estudiantes registrados" value={stats.totalUsers} icon={Users} color="bg-primary" />
+          <StatCard label="Total de citas" value={stats.totalCitas} icon={Calendar} color="bg-secondary" />
+          <StatCard label="Citas completadas" value={stats.citasCompletadas} icon={CheckCircle} color="bg-green-500" />
+          <StatCard label="Citas pendientes" value={stats.citasPendientes} icon={Clock} color="bg-yellow-500" />
+          <StatCard label="Citas este mes" value={stats.citasThisMonth} icon={Calendar} color="bg-blue-500" />
+          <StatCard label="Alertas SOS" value={stats.sosAlerts} icon={Users} color="bg-red-500" />
+        </div>
+      )}
+
+      {tab === 'users' && (
+        <div className="space-y-4">
+          {/* Filtros */}
+          <div className="flex gap-3 flex-wrap">
+            <form onSubmit={handleSearch} className="flex gap-2 flex-1 min-w-0">
+              <div className="flex-1 relative min-w-0">
+                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-outline" />
+                <input value={search} onChange={e => setSearch(e.target.value)}
+                  placeholder="Buscar por nombre o email..."
+                  className="w-full bg-white border border-outline-variant/30 rounded-xl pl-9 pr-4 py-2.5 text-sm focus:ring-2 focus:ring-primary outline-none" />
+              </div>
+              <button type="submit" className="bg-primary text-white px-4 py-2.5 rounded-xl font-bold text-sm">Buscar</button>
+            </form>
+            <select value={roleFilter} onChange={e => { setRoleFilter(e.target.value); setPage(1); }}
+              className="bg-white border border-outline-variant/30 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary outline-none">
+              <option value="">Todos los roles</option>
+              <option value="USER">Estudiantes</option>
+              <option value="PSYCHOLOGIST">Psicólogos</option>
+              <option value="ADMIN">Admins</option>
+            </select>
+          </div>
+
+          <p className="text-sm text-on-surface-variant">{total} usuarios encontrados</p>
+
+          {loading ? (
+            <div className="flex justify-center py-12"><div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" /></div>
+          ) : (
+            <div className="bg-white rounded-2xl border border-outline-variant/20 shadow-sm overflow-hidden">
+              <table className="w-full text-sm">
+                <thead className="bg-surface-container">
+                  <tr>
+                    {['Nombre', 'Email', 'Rol', 'Facultad', 'Citas', 'Registro'].map(h => (
+                      <th key={h} className="text-left px-4 py-3 font-bold text-on-surface-variant text-xs uppercase tracking-wider">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-outline-variant/10">
+                  {users.map(u => (
+                    <tr key={u.id} className="hover:bg-surface-container/50 transition-colors">
+                      <td className="px-4 py-3 font-bold text-on-surface">{u.name ?? '—'}</td>
+                      <td className="px-4 py-3 text-on-surface-variant">{u.email}</td>
+                      <td className="px-4 py-3">
+                        <span className={`text-xs px-2 py-1 rounded-full font-bold ${roleColors[u.role]}`}>
+                          {roleLabels[u.role]}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-on-surface-variant">{u.faculty ?? '—'}</td>
+                      <td className="px-4 py-3 text-on-surface-variant">{u._count?.citas ?? 0}</td>
+                      <td className="px-4 py-3 text-on-surface-variant">
+                        {new Date(u.createdAt).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* Paginación */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-3">
+              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
+                className="p-2 hover:bg-surface-container rounded-lg disabled:opacity-40">
+                <ChevronLeft size={20} />
+              </button>
+              <span className="text-sm font-bold text-on-surface-variant">Página {page} de {totalPages}</span>
+              <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
+                className="p-2 hover:bg-surface-container rounded-lg disabled:opacity-40">
+                <ChevronRight size={20} />
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
 
 export default Admin;
