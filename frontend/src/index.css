@@ -33,6 +33,15 @@
   --color-error-container: #ffdad6;
   --color-on-error-container: #93000a;
 
+  /* Tokens adicionales del zip */
+  --color-warning: #f59e0b;
+  --color-warning-foreground: #ffffff;
+  --color-card: #ffffff;
+  --color-card-foreground: #191c1d;
+  --color-primary-foreground: #ffffff;
+  --color-secondary-foreground: #ffffff;
+  --color-error-foreground: #ffffff;
+
   --radius-xl: 1.5rem;
   --radius-lg: 1rem;
 }

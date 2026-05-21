@@ -27,7 +27,7 @@ const Sidebar = () => {
     { icon: Home,     label: 'Inicio',          path: '/dashboard' },
     { icon: Calendar, label: 'Citas',            path: '/appointments' },
     { icon: Clock,    label: 'Agenda',           path: '/agenda' },
-    { icon: User,     label: 'Perfil',           path: '/profile' },
+    { icon: User,     label: 'Usuario',           path: '/profile' },
     { icon: Bell,     label: 'Notificaciones',   path: '/notifications' },
     { icon: Settings, label: 'Configuración',    path: '/settings' },
   ];

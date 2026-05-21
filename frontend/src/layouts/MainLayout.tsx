@@ -13,7 +13,7 @@ const MainLayout: React.FC = () => {
       case '/dashboard': return 'Panel Estudiantil';
       case '/appointments': return 'Citas';
       case '/agenda': return 'Agenda';
-      case '/profile': return 'Perfil';
+      case '/profile': return 'Usuario';
       case '/notifications': return 'Notificaciones';
       case '/settings': return 'Configuración';
       case '/admin': return 'Panel del Administrador';

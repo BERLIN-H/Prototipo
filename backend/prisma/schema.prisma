@@ -21,6 +21,7 @@ model User {
   citas         Cita[]         @relation("StudentCitas")
   citasAsProf   Cita[]         @relation("ProfCitas")
   notifications Notification[]
+  availableSlots AvailableSlot[] @relation("ProfSlots")
 
   @@map("users")
 }
@@ -35,12 +36,27 @@ model Cita {
   location       String?
   status         CitaStatus @default(PENDIENTE)
   notes          String?
+  studentPhone   String?
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @updatedAt
   student        User       @relation("StudentCitas", fields: [studentId], references: [id])
   professional   User       @relation("ProfCitas", fields: [professionalId], references: [id])
 
   @@map("citas")
+}
+
+model AvailableSlot {
+  id             Int      @id @default(autoincrement())
+  professionalId Int
+  dayOfWeek      Int      // 0=Dom, 1=Lun, ..., 6=Sáb
+  startHour      Int      // hora en minutos desde medianoche (ej: 480 = 8:00 AM)
+  endHour        Int      // hora en minutos desde medianoche (ej: 660 = 11:00 AM)
+  durationMin    Int      @default(50) // duración de cada bloque en minutos
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  professional   User     @relation("ProfSlots", fields: [professionalId], references: [id])
+
+  @@map("available_slots")
 }
 
 model Notification {

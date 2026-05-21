@@ -7,6 +7,9 @@ export const createCitaSchema = z.object({
   mode: z.enum(['Presencial', 'Virtual']).optional().default('Presencial'),
   location: z.string().optional(),
   notes: z.string().optional(),
+  studentPhone: z.string().regex(/^\+57\s?\d{3}\s?\d{3}\s?\d{4}$|^\+57\d{10}$/, {
+    message: 'Número de teléfono inválido. Formato requerido: +57XXXXXXXXXX',
+  }),
 });
 
 export const updateCitaSchema = z.object({
