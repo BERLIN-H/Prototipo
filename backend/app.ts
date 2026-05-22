@@ -6,8 +6,12 @@ import citasRoutes from './src/modules/citas/citas.routes';
 import usersRoutes from './src/modules/users/users.routes';
 import notificationsRoutes from './src/modules/notifications/notifications.routes';
 import adminRoutes from './src/modules/admin/admin.routes';
+import { startReminderScheduler } from './src/modules/citas/reminders';
 
 const app = express();
+
+// Arranca el scheduler de recordatorios WhatsApp (24h antes de cada cita)
+startReminderScheduler();
 
 app.use(cors());
 app.use(express.json());

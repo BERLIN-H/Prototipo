@@ -1,45 +1,11 @@
 import { Response } from 'express';
 import { AuthRequest } from '../../middlewares/auth.middleware';
 import prisma from '../../lib/prisma';
-
-// ── Twilio WhatsApp helper ────────────────────────────────────────────────────
-const sendWhatsAppNotification = async (opts: {
-  to: string;
-  studentName: string;
-  date: Date;
-  professionalName: string;
-}) => {
-  const accountSid = process.env.TWILIO_ACCOUNT_SID;
-  const authToken  = process.env.TWILIO_AUTH_TOKEN;
-  const fromNumber = process.env.TWILIO_WHATSAPP_NUMBER ?? 'whatsapp:+14155238886';
-
-  if (!accountSid || !authToken) {
-    console.warn('[Twilio] Variables no configuradas. Omitiendo WhatsApp.');
-    return;
-  }
-
-  const dateStr = opts.date.toLocaleDateString('es-CO', {
-    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
-  });
-  const timeStr = opts.date.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
-
-  const body =
-    `✅ *Cita Agendada — Equilibria*\n\n` +
-    `Hola ${opts.studentName}, tu cita ha sido registrada exitosamente.\n\n` +
-    `📅 *Fecha:* ${dateStr}\n` +
-    `🕐 *Hora:* ${timeStr}\n` +
-    `👨‍⚕️ *Psicólogo/a:* ${opts.professionalName}\n\n` +
-    `_El lugar o enlace de reunión te será informado por tu psicólogo/a próximamente._`;
-
-  try {
-    const twilio = (await import('twilio')).default;
-    const client = twilio(accountSid, authToken);
-    await client.messages.create({ from: fromNumber, to: `whatsapp:${opts.to}`, body });
-    console.log(`[Twilio] WhatsApp enviado a ${opts.to}`);
-  } catch (err) {
-    console.error('[Twilio] Error enviando WhatsApp:', err);
-  }
-};
+import {
+  sendAppointmentConfirmation,
+  sendCancellationToStudent,
+  sendCancellationToProfessional,
+} from '../../lib/twilio';
 
 // ── GET /api/citas ─────────────────────────────────────────────────────────────
 export const getCitas = async (req: AuthRequest, res: Response): Promise<void> => {
@@ -115,8 +81,22 @@ export const createCita = async (req: AuthRequest, res: Response): Promise<void>
   }
 
   const citaDate = new Date(date);
-  const dayOfWeek  = citaDate.getDay();
-  const slotMinutes = citaDate.getHours() * 60 + citaDate.getMinutes();
+
+  // Convertir a hora de Colombia (UTC-5) para comparar con los slots de disponibilidad
+  // que están definidos en hora local
+  const colombiaOffset = -5 * 60; // minutos
+  const localMinutes = citaDate.getUTCHours() * 60 + citaDate.getUTCMinutes() + colombiaOffset;
+  const adjustedMinutes = ((localMinutes % (24 * 60)) + 24 * 60) % (24 * 60);
+
+  // El día de la semana también debe calcularse en hora Colombia
+  const utcDay = citaDate.getUTCDay();
+  const totalUTCMinutes = citaDate.getUTCHours() * 60 + citaDate.getUTCMinutes();
+  const dayOfWeek = totalUTCMinutes + colombiaOffset < 0 
+    ? ((utcDay - 1) + 7) % 7 
+    : totalUTCMinutes + colombiaOffset >= 24 * 60 
+      ? (utcDay + 1) % 7 
+      : utcDay;
+  const slotMinutes = adjustedMinutes;
 
   // Verificar que el horario esté dentro de un bloque disponible
   const matchingSlot = await (prisma as any).availableSlot.findFirst({
@@ -177,11 +157,12 @@ export const createCita = async (req: AuthRequest, res: Response): Promise<void>
     },
   });
 
-  sendWhatsAppNotification({
-    to:              cleanPhone,
-    studentName:     user.name ?? 'Estudiante',
-    date:            citaDate,
+  sendAppointmentConfirmation({
+    to:               cleanPhone,
+    studentName:      user.name ?? 'Estudiante',
+    date:             citaDate,
     professionalName: professional.name ?? 'tu psicólogo/a',
+    appointmentType:  type,
   }).catch(() => {});
 
   const { location, studentPhone: sp, ...rest } = cita as any;
@@ -233,6 +214,42 @@ export const updateCita = async (req: AuthRequest, res: Response): Promise<void>
         title:   `Cita ${statusLabel[data.status] ?? 'actualizada'}`,
         message: `Tu cita ha sido ${statusLabel[data.status] ?? 'actualizada'} por tu profesional.`,
         type:    data.status === 'CONFIRMADA' ? 'SUCCESS' : data.status === 'CANCELADA' ? 'WARNING' : 'INFO',
+      },
+    });
+
+    // WhatsApp al estudiante si el psicólogo cancela
+    if (data.status === 'CANCELADA') {
+      const student = await prisma.user.findUnique({ where: { id: cita.studentId } });
+      if (student && (student as any).phone) {
+        sendCancellationToStudent({
+          to:               (student as any).phone,
+          studentName:      student.name ?? 'Estudiante',
+          date:             cita.date,
+          professionalName: updated.professional.name ?? 'tu psicólogo/a',
+          cancelledBy:      'professional',
+        }).catch(() => {});
+      }
+    }
+  }
+
+  // WhatsApp al psicólogo si el estudiante cancela
+  if (data.status === 'CANCELADA' && user.role === 'USER') {
+    const professional = await prisma.user.findUnique({ where: { id: cita.professionalId } });
+    if (professional && (professional as any).phone) {
+      sendCancellationToProfessional({
+        to:               (professional as any).phone,
+        professionalName: professional.name ?? 'Psicólogo/a',
+        date:             cita.date,
+        studentName:      updated.student.name ?? 'un estudiante',
+      }).catch(() => {});
+    }
+    // Notificación interna al psicólogo
+    await prisma.notification.create({
+      data: {
+        userId:  cita.professionalId,
+        title:   'Cita cancelada por estudiante',
+        message: `El/la estudiante ${updated.student.name ?? ''} canceló su cita del ${cita.date.toLocaleDateString('es-CO')}.`,
+        type:    'WARNING',
       },
     });
   }

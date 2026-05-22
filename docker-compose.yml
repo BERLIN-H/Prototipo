@@ -33,6 +33,10 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-equilibria_user}:${POSTGRES_PASSWORD:-equilibria_pass}@postgres:5432/${POSTGRES_DB:-equilibria_db}
       JWT_SECRET: ${JWT_SECRET}
       PORT: 3000
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN}
+      TWILIO_WHATSAPP_NUMBER: ${TWILIO_WHATSAPP_NUMBER}
+      TWILIO_CONTENT_SID: ${TWILIO_CONTENT_SID}
     ports:
       - "3000:3000"
     depends_on:

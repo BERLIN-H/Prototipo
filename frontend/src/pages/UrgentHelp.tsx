@@ -1,116 +1,137 @@
 import React from 'react';
-import { Phone, MessageCircle, ShieldAlert, Heart, ArrowLeft, ExternalLink } from 'lucide-react';
+import { Phone, MessageCircle, AlertCircle, Heart, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
+
+const emergencyResources = [
+  {
+    title: 'Línea de crisis universitaria',
+    description: 'Atención psicológica de emergencia 24/7',
+    phone: '018000123456',
+    icon: Phone,
+    color: 'bg-primary',
+  },
+  {
+    title: 'Línea 106',
+    description: 'Atención a la salud mental - Colombia',
+    phone: '106',
+    icon: Phone,
+    color: 'bg-secondary',
+  },
+  {
+    title: 'Chat de apoyo',
+    description: 'Habla con un profesional ahora mismo',
+    phone: null,
+    icon: MessageCircle,
+    color: 'bg-red-500',
+    action: true,
+  },
+];
+
+const selfHelpTips = [
+  'Respira profundamente: inhala 4 segundos, mantén 4 segundos, exhala 4 segundos.',
+  'Busca un lugar seguro y tranquilo si es posible.',
+  'Recuerda que esta sensación pasará.',
+  'No estás solo/a. Hay personas que quieren ayudarte.',
+  'Está bien pedir ayuda. Es un acto de valentía.',
+];
 
 const UrgentHelp = () => {
   const navigate = useNavigate();
 
-  const resources = [
-    { 
-      title: 'Línea de Vida Nacional', 
-      phone: '106', 
-      description: 'Atención psicológica gratuita las 24 horas del día.',
-      icon: Phone,
-      color: 'bg-primary'
-    },
-    { 
-      title: 'Chat de Apoyo Institucional', 
-      phone: '+57 300 000 0000', 
-      description: 'Chatea con un orientador de Bienestar Universitario.',
-      icon: MessageCircle,
-      color: 'bg-secondary'
-    },
-    { 
-      title: 'Emergencias Generales', 
-      phone: '123', 
-      description: 'Línea única de atención de emergencias en Colombia.',
-      icon: ShieldAlert,
-      color: 'bg-error'
-    }
-  ];
-
   return (
-    <div className="max-w-4xl mx-auto py-8 px-4">
-      <motion.button 
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
+    <div className="max-w-2xl mx-auto py-8 px-4 space-y-6">
+      {/* Volver */}
+      <button
         onClick={() => navigate(-1)}
-        className="flex items-center gap-2 text-outline hover:text-primary transition-colors mb-8 font-bold text-sm"
+        className="inline-flex items-center gap-2 text-on-surface-variant hover:text-on-surface transition-colors"
       >
-        <ArrowLeft size={18} />
-        Regresar al panel
-      </motion.button>
+        <ArrowLeft size={20} />
+        <span className="font-medium">Volver al inicio</span>
+      </button>
 
-      <header className="text-center mb-12 space-y-4">
-        <div className="w-20 h-20 bg-error/10 text-error rounded-full flex items-center justify-center mx-auto mb-6 animate-pulse">
-          <ShieldAlert size={48} />
-        </div>
-        <h1 className="text-4xl font-display font-black text-on-surface tracking-tight">Centro de Ayuda Urgente</h1>
-        <p className="text-lg text-on-surface-variant max-w-2xl mx-auto">
-          Si te encuentras en una situación de crisis o necesitas apoyo emocional inmediato, no estás solo. Utiliza cualquiera de los siguientes recursos.
+      {/* Header */}
+      <div className="text-center py-4">
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+          className="w-20 h-20 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-4"
+        >
+          <AlertCircle size={40} className="text-red-500" />
+        </motion.div>
+        <h1 className="text-3xl font-display font-black text-on-surface">Ayuda Urgente</h1>
+        <p className="text-on-surface-variant mt-2 max-w-md mx-auto">
+          Si estás pasando por una crisis emocional, no estás solo/a. Aquí encontrarás recursos para obtener ayuda inmediata.
         </p>
-      </header>
+      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="space-y-6">
-          <h2 className="text-xl font-bold text-on-surface flex items-center gap-2">
-            <Phone size={20} className="text-error" />
-            Líneas de Atención Directa
-          </h2>
-          <div className="space-y-4">
-            {resources.map((resource) => (
-              <motion.div 
-                key={resource.title}
-                whileHover={{ scale: 1.02 }}
-                className="bg-white p-6 rounded-2xl border border-outline-variant/30 shadow-xl flex items-center gap-6"
-              >
-                <div className={`p-4 rounded-xl text-white ${resource.color}`}>
-                  <resource.icon size={24} />
+      {/* Recursos de emergencia */}
+      <div className="space-y-3">
+        {emergencyResources.map((resource, index) => (
+          <motion.div key={resource.title}
+            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.1 }}
+          >
+            {resource.phone ? (
+              <a href={`tel:${resource.phone}`}
+                className="flex items-center gap-4 bg-white rounded-2xl border border-outline-variant/20 shadow-sm p-5 hover:shadow-md transition-shadow">
+                <div className={`w-14 h-14 rounded-xl ${resource.color} flex items-center justify-center text-white shrink-0`}>
+                  <resource.icon size={28} />
                 </div>
-                <div className="flex-grow">
+                <div className="flex-1">
                   <h3 className="font-bold text-on-surface">{resource.title}</h3>
-                  <p className="text-2xl font-black text-primary mt-1 tracking-tight">{resource.phone}</p>
-                  <p className="text-xs text-outline mt-1 font-medium">{resource.description}</p>
+                  <p className="text-sm text-on-surface-variant">{resource.description}</p>
+                  <p className="text-lg font-bold text-primary mt-1">{resource.phone}</p>
                 </div>
-                <button className="p-3 bg-surface-container-low rounded-full text-primary hover:bg-primary hover:text-white transition-all">
-                  <ExternalLink size={20} />
-                </button>
-              </motion.div>
-            ))}
-          </div>
-        </div>
+              </a>
+            ) : (
+              <button className="w-full flex items-center gap-4 bg-white rounded-2xl border border-outline-variant/20 shadow-sm p-5 hover:shadow-md transition-shadow text-left">
+                <div className={`w-14 h-14 rounded-xl ${resource.color} flex items-center justify-center text-white shrink-0`}>
+                  <resource.icon size={28} />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-bold text-on-surface">{resource.title}</h3>
+                  <p className="text-sm text-on-surface-variant">{resource.description}</p>
+                  <p className="text-sm font-bold text-red-500 mt-1">Iniciar chat ahora</p>
+                </div>
+              </button>
+            )}
+          </motion.div>
+        ))}
+      </div>
 
-        <div className="space-y-6">
-          <h2 className="text-xl font-bold text-on-surface flex items-center gap-2">
-            <Heart size={20} className="text-secondary" />
-            Guía de Primeros Auxilios Psicológicos
-          </h2>
-          <div className="bg-secondary/5 border border-secondary/20 rounded-2xl p-8 space-y-6">
-            <p className="text-sm font-semibold text-secondary-container bg-secondary px-4 py-1 rounded-full w-fit">¿Qué hacer ahora?</p>
-            <ol className="space-y-6">
-              {[
-                { step: '1', text: 'Respira profundo', desc: 'Inhala por 4 segundos, mantén 4 y exhala por 4.' },
-                { step: '2', text: 'Busca un lugar seguro', desc: 'Aléjate de situaciones estresantes si es posible.' },
-                { step: '3', text: 'Contacta a alguien de confianza', desc: 'No pases por esto solo, llama a un amigo o familiar.' },
-                { step: '4', text: 'Espera la ayuda profesional', desc: 'Ya has dado el primer paso al entrar aquí.' }
-              ].map((item) => (
-                <li key={item.step} className="flex gap-4">
-                  <span className="w-8 h-8 rounded-full bg-secondary text-white flex items-center justify-center font-bold shrink-0">{item.step}</span>
-                  <div>
-                    <h4 className="font-bold text-on-surface">{item.text}</h4>
-                    <p className="text-sm text-on-surface-variant">{item.desc}</p>
-                  </div>
-                </li>
-              ))}
-            </ol>
+      {/* Mientras esperas */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
+        className="bg-secondary/5 border border-secondary/20 rounded-2xl p-6"
+      >
+        <div className="flex items-center gap-3 mb-4">
+          <Heart size={24} className="text-secondary" />
+          <h2 className="font-bold text-on-surface">Mientras esperas ayuda</h2>
+        </div>
+        <ul className="space-y-3">
+          {selfHelpTips.map((tip, index) => (
+            <li key={index} className="flex items-start gap-3 text-sm text-on-surface-variant">
+              <span className="w-6 h-6 rounded-full bg-secondary/20 text-secondary flex items-center justify-center shrink-0 text-xs font-bold">
+                {index + 1}
+              </span>
+              <span>{tip}</span>
+            </li>
+          ))}
+        </ul>
+      </motion.div>
+
+      {/* Nota importante */}
+      <div className="bg-red-50 border border-red-200 rounded-2xl p-5">
+        <div className="flex items-start gap-3">
+          <AlertCircle size={20} className="text-red-500 shrink-0 mt-0.5" />
+          <div>
+            <p className="font-bold text-on-surface">Si es una emergencia médica</p>
+            <p className="text-sm text-on-surface-variant mt-1">
+              Llama inmediatamente al <strong>123</strong> (Número único de emergencias) o acude al servicio de urgencias más cercano.
+            </p>
           </div>
         </div>
       </div>
-
-      <footer className="mt-16 text-center pt-8 border-t border-outline-variant/30">
-        <p className="text-sm font-bold text-outline uppercase tracking-widest">Equilibria • Servicio Institucional de Bienestar</p>
-      </footer>
     </div>
   );
 };

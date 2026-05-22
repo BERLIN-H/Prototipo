@@ -10,6 +10,7 @@ import {
   FlameKindling,
   Scale,
   Clock,
+  ShieldCheck,
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useAuthStore } from '../store/authStore';
@@ -24,13 +25,14 @@ const Sidebar = () => {
   };
 
   const navItems = [
-    { icon: Home,     label: 'Inicio',          path: '/dashboard' },
-    { icon: Calendar, label: 'Citas',            path: '/appointments' },
-    { icon: Clock,    label: 'Agenda',           path: '/agenda' },
-    { icon: User,     label: 'Usuario',           path: '/profile' },
-    { icon: Bell,     label: 'Notificaciones',   path: '/notifications' },
-    { icon: Settings, label: 'Configuración',    path: '/settings' },
-  ];
+    { icon: Home,     label: 'Inicio',          path: '/dashboard',      roles: ['USER','PSYCHOLOGIST','ADMIN'] },
+    { icon: Calendar, label: 'Citas',            path: '/appointments',   roles: ['USER','PSYCHOLOGIST','ADMIN'] },
+    { icon: Clock,    label: 'Agenda',           path: '/agenda',         roles: ['USER','PSYCHOLOGIST','ADMIN'] },
+    { icon: User,     label: 'Usuario',          path: '/profile',        roles: ['USER','PSYCHOLOGIST','ADMIN'] },
+    { icon: Bell,     label: 'Notificaciones',   path: '/notifications',  roles: ['USER','PSYCHOLOGIST','ADMIN'] },
+    { icon: Settings, label: 'Configuración',    path: '/settings',       roles: ['USER','PSYCHOLOGIST','ADMIN'] },
+    { icon: ShieldCheck, label: 'Administración', path: '/admin',         roles: ['ADMIN'] },
+  ].filter(item => !user?.role || item.roles.includes(user.role));
 
   return (
     <aside className="h-screen w-64 fixed left-0 top-0 hidden md:flex flex-col bg-surface-container-low border-r border-tertiary/10 shadow-sm p-4 gap-2 z-50">

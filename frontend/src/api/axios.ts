@@ -9,7 +9,7 @@ const api = axios.create({
 
 // Attach token automatically on every request
 api.interceptors.request.use((config) => {
-  const raw = localStorage.getItem('auth-storage');
+  const raw = localStorage.getItem('equilibria-auth');
   if (raw) {
     try {
       const { state } = JSON.parse(raw);

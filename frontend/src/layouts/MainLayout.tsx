@@ -3,14 +3,19 @@ import { Outlet, useLocation, NavLink, useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import TopBar from '../components/TopBar';
 import { Home, Calendar, Clock, User, FlameKindling } from 'lucide-react';
+import { useAuthStore } from '../store/authStore';
 
 const MainLayout: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { user } = useAuthStore();
   
   const getTitle = () => {
     switch (location.pathname) {
-      case '/dashboard': return 'Panel Estudiantil';
+      case '/dashboard':
+        if (user?.role === 'PSYCHOLOGIST') return 'Panel del Psicólogo';
+        if (user?.role === 'ADMIN') return 'Panel del Administrador';
+        return 'Panel Estudiantil';
       case '/appointments': return 'Citas';
       case '/agenda': return 'Agenda';
       case '/profile': return 'Usuario';

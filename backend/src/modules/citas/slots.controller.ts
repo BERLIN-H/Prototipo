@@ -14,7 +14,14 @@ export const getAvailableSlots = async (req: AuthRequest, res: Response): Promis
 
   const profId = parseInt(professionalId as string);
   const targetDate = new Date(date as string);
-  const dayOfWeek = targetDate.getDay(); // 0=Dom..6=Sáb
+
+  // Calcular día de semana en hora Colombia (UTC-5)
+  const colombiaOffset = -5 * 60;
+  const utcMidnightMinutes = targetDate.getUTCHours() * 60 + targetDate.getUTCMinutes();
+  const localMidnightMinutes = utcMidnightMinutes + colombiaOffset;
+  let dayOfWeek = targetDate.getUTCDay();
+  if (localMidnightMinutes < 0) dayOfWeek = ((dayOfWeek - 1) + 7) % 7;
+  else if (localMidnightMinutes >= 24 * 60) dayOfWeek = (dayOfWeek + 1) % 7;
 
   // Traer bloques configurados para ese día de la semana
   const slots = await prisma.availableSlot.findMany({
@@ -45,7 +52,9 @@ export const getAvailableSlots = async (req: AuthRequest, res: Response): Promis
   const bookedMinutes = new Set(
     booked.map(c => {
       const d = new Date(c.date);
-      return d.getHours() * 60 + d.getMinutes();
+      // Convertir a hora Colombia (UTC-5)
+      const minutesUTC = d.getUTCHours() * 60 + d.getUTCMinutes();
+      return ((minutesUTC + colombiaOffset) % (24 * 60) + 24 * 60) % (24 * 60);
     })
   );
 
